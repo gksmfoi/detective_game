@@ -7,7 +7,12 @@ from dotenv import load_dotenv
 sys.stdout.reconfigure(encoding='utf-8')
 load_dotenv()
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+try:
+    import streamlit as st
+    api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
+except Exception:
+    api_key = os.environ.get("OPENAI_API_KEY")
+client = OpenAI(api_key=api_key)
 
 SYSTEM_PROMPT = """당신은 텍스트 기반 추리 게임의 사건 설계자입니다.
 사용자는 탐정 역할을 수행합니다.
