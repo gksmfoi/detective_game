@@ -1,18 +1,20 @@
 import os
 from openai import OpenAI
-from dotenv import load_dotenv
 
-load_dotenv()
 
-try:
-    import streamlit as st
-    api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-except Exception:
-    api_key = os.environ.get("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key)
+def get_client():
+    try:
+        import streamlit as st
+        api_key = st.secrets.get("OPENAI_API_KEY")
+        if api_key:
+            return OpenAI(api_key=api_key)
+    except Exception:
+        pass
+    return OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 
 def judge_accusation(case: dict, accused_id: str, reason: str, collected_clues: list) -> dict:
+    client = get_client()
     truth = case["truth"]
     is_correct = accused_id == truth["culprit_id"]
     accused_name = next(

@@ -1,18 +1,10 @@
 import json
 import os
 import sys
-from openai import OpenAI
-from dotenv import load_dotenv
 
 sys.stdout.reconfigure(encoding='utf-8')
-load_dotenv()
 
-try:
-    import streamlit as st
-    api_key = st.secrets.get("OPENAI_API_KEY") or os.environ.get("OPENAI_API_KEY")
-except Exception:
-    api_key = os.environ.get("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key)
+from openai import OpenAI
 
 SYSTEM_PROMPT = """당신은 텍스트 기반 추리 게임의 사건 설계자입니다.
 사용자는 탐정 역할을 수행합니다.
@@ -62,7 +54,19 @@ USER_PROMPT = """새로운 추리 사건을 만들어주세요.
 }"""
 
 
+def get_client():
+    try:
+        import streamlit as st
+        api_key = st.secrets.get("OPENAI_API_KEY")
+        if api_key:
+            return OpenAI(api_key=api_key)
+    except Exception:
+        pass
+    return OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+
 def generate_case() -> dict | None:
+    client = get_client()
     for attempt in range(3):
         try:
             res = client.chat.completions.create(
@@ -80,13 +84,10 @@ def generate_case() -> dict | None:
                 if raw.startswith("json"):
                     raw = raw[4:]
             case = json.loads(raw.strip())
-
-            # 검증
             assert "case_title" in case
             assert "suspects" in case and len(case["suspects"]) == 3
             assert "truth" in case
             assert any(s["is_culprit"] for s in case["suspects"])
-
             return case
         except Exception as e:
             print(f"[case_generator] 시도 {attempt+1} 실패: {e}")
